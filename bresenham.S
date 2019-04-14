@@ -1,17 +1,19 @@
 .global bresenham
+.global bresenham2
 .data
-x: .quad 0
-y: .quad 0
-x0: .quad 0
-x1: .quad 0
-y0: .quad 0
-y1: .quad 0
-colorR: .byte 255 
-colorG: .byte 255 
-colorB: .byte 255
-.align 8
+    colorR: .byte 255
+    colorG: .byte 255 
+    colorB: .byte 255
+    .align 8
+    x: .quad 0
+    y: .quad 0
+.bss
+    x0: .quad 0
+    x1: .quad 0
+    y0: .quad 0
+    y1: .quad 0
 .text
-bresenham: //something like this: bresenham(int color,int x0,int x1, int y0, int y1), color is a hex value
+bresenham: //something like this: bresenham(int color,int x0,int x1, int y0, int y1, double z0, double z1), color is a hex value
 #process arguments
     push %rbx
     mov %rdi, %rax
@@ -37,7 +39,16 @@ bresenham: //something like this: bresenham(int color,int x0,int x1, int y0, int
     mov y0(%rip), %rcx
     xchg y1(%rip), %rcx
     mov %rcx, y0(%rip)
+    movsd %xmm0, %xmm2
+    movsd %xmm1, %xmm0
+    movsd %xmm2, %xmm1
     noswap:
+    movsd %xmm0, %xmm2
+    mov x1(%rip), %r10
+    sub x0(%rip), %r10
+    cvtsi2sd %r10, %xmm3
+    vsubsd %xmm0, %xmm1, %xmm2
+    vdivsd %xmm2, %xmm3, %xmm2
 #assign x and y
     movq x0(%rip), %r8
     movq %r8, x(%rip) //x = x-naught
@@ -144,19 +155,19 @@ o8:
     pop %rbx
     ret
 plot:
-#plot x,y
+#plot x,y,z!!!
     cmpq $512, x(%rip)
-    jge pltdone
-    cmpq $0, x(%rip)
-    jl pltdone
+    jae pltdone
     cmpq $512, y(%rip)
-    jge pltdone
-    cmpq $0, y(%rip)
-    jl pltdone
+    jae pltdone
     mov y(%rip), %r8//this will be the index
     sal $9, %r8
     add x(%rip), %r8
-    imul $3, %r8
+    mov %r8, %r9
+    lea zbuffer(%rip), %rcx
+    comisd (%rcx, %r9,8), %xmm0
+    jb pltdone
+    shl $2, %r8
     lea data(%rip),%rcx
     add %rcx, %r8
 //color the pixel :)
@@ -166,6 +177,40 @@ plot:
     movb %cl, 1(%r8)
     movzbw colorB(%rip), %cx
     movb %cl, 2(%r8)
+    lea zbuffer(%rip),%rcx
+    movsd %xmm0, (%rcx, %r9,8)
 //Plotting done 
     pltdone:
+    addsd %xmm2, %xmm0
     ret
+bresenham2: //something like this: bresenham(int color,int x0,int x1, int y, double z0, double z1), color is a hex value
+    neg %rcx
+    add $511, %rcx
+    cmp $511, %rcx
+    ja endb2
+    cmp %rsi, %rdx
+    jg noswap2
+    xchg %rsi, %rdx
+    noswap2:
+    mov %edi, %eax//put color into rax register for stosd
+    lea data(%rip), %rdi//find proper destination
+    imul $512,%rcx//get y coord offset
+    dec %rsi
+    add %rsi, %rcx
+    startb2:
+    cmp %rsi, %rdx
+    jl endb2
+    cmp $511, %rsi
+    jg endb2
+    cmp $0, %rsi
+    jl oof
+    mov %eax, (%rdi,%rcx,4)
+    inc %rcx
+    inc %rsi
+    jmp startb2
+    endb2:
+    ret
+    oof:
+    inc %rcx
+    inc %rsi
+    jmp startb2

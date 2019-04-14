@@ -31,6 +31,8 @@ addtri://vertices packed x,y,z in %ymm0, %ymm1, %ymm2
     call bresenham
 .endm
 drawtri://first point in ymm0, second point in ymm1, third point in ymm2, draws triangle
+    push %r15
+    rdrand %r15
     sub $136,%rsp
     vmovups %ymm0,(%rsp)
     vmovups %ymm1,32(%rsp)
@@ -44,20 +46,59 @@ drawtri://first point in ymm0, second point in ymm1, third point in ymm2, draws 
     vmovups (%rsp), %ymm0
     vmovups 32(%rsp), %ymm1
     vmovups 64(%rsp), %ymm2
-    vcvtpd2dq %ymm0, %xmm0
-    vcvtpd2dq %ymm1, %xmm1
-    vcvtpd2dq %ymm2, %xmm2
-    movlps %xmm0, (%rsp)
-    movlps %xmm1, 8(%rsp)
-    movlps %xmm2, 16(%rsp)
-    bresenhamcaller 0,4,8,12
-    bresenhamcaller 16,20,8,12
-    bresenhamcaller 16,20,0,4
+    call bmt
+    vmovups %ymm0, (%rsp)
+    vmovups %ymm1, 32(%rsp)
+    vmovups %ymm2, 64(%rsp)
+    movsd (%rsp), %xmm4
+    movsd 8(%rsp), %xmm5
+    movsd 32(%rsp), %xmm6
+    movsd 40(%rsp), %xmm7
+    movsd 64(%rsp), %xmm8
+    movsd 72(%rsp), %xmm9
+    //?here do from bottom to middle ✓
+    //+= (Tx-Bx)/(Ty-By)
+    vsubsd %xmm4, %xmm8, %xmm10
+    vsubsd %xmm5, %xmm9, %xmm11
+    vdivsd %xmm11, %xmm10, %xmm10
+    vsubsd %xmm4, %xmm6, %xmm11
+    vsubsd %xmm5, %xmm7, %xmm12
+    vdivsd %xmm12, %xmm11, %xmm11
+    movsd %xmm4, %xmm13
+    bottommiddleloop:
+    vcomisd %xmm5, %xmm7
+    jbe bmiddletoploop
+    mov %r15, %rdi
+    cvtsd2si %xmm4, %rsi
+    cvtsd2si %xmm13, %rdx
+    cvtsd2si %xmm5, %rcx
+    call bresenham2
+    vaddsd one(%rip), %xmm5, %xmm5
+    vaddsd %xmm10, %xmm4, %xmm4
+    vaddsd %xmm11, %xmm13, %xmm13
+    jmp bottommiddleloop
+    bmiddletoploop:
+    vsubsd %xmm6, %xmm8, %xmm11
+    vsubsd %xmm7, %xmm9, %xmm12
+    vdivsd %xmm12, %xmm11, %xmm11
+    middletoploop:
+    vcomisd %xmm7, %xmm9
+    jbe enddraw
+    mov %r15, %rdi
+    cvtsd2si %xmm4, %rsi
+    cvtsd2si %xmm6, %rdx
+    cvtsd2si %xmm7, %rcx
+    call bresenham2
+    vaddsd one(%rip), %xmm7, %xmm7
+    vaddsd %xmm10, %xmm4, %xmm4
+    vaddsd %xmm11, %xmm6, %xmm6
+    jmp middletoploop
     enddraw:
     add $136, %rsp
+    pop %r15
     ret
 .macro swapit a,b,c,d,e
-    vcomiss %xmm\d, %xmm\c
+    vcomisd %xmm\d, %xmm\c
     jb \e
     vmovups \a(%rsp), %ymm3
     vmovups \b(%rsp), %ymm4
@@ -68,14 +109,14 @@ drawtri://first point in ymm0, second point in ymm1, third point in ymm2, draws 
     movsd %xmm3, %xmm\d
     \e:
 .endm
-bmt: //finds bottom, middle, and top points of all the ymm registers
+bmt: //finds bottom, middle, and top points of all the 3 ymm registers
     sub $136, %rsp
     vmovups %ymm0,(%rsp)
     vmovups %ymm1,32(%rsp)
     vmovups %ymm2,64(%rsp)
-    vpermq $0b10, %ymm0, %ymm0
-    vpermq $0b10, %ymm1, %ymm1
-    vpermq $0b10, %ymm2, %ymm2
+    vpermq $0b01, %ymm0, %ymm0
+    vpermq $0b01, %ymm1, %ymm1
+    vpermq $0b01, %ymm2, %ymm2
     swapit 32,64,1,2,twolower
     swapit 0,32,0,1,onelower
     swapit 32,64,1,2,zerolower

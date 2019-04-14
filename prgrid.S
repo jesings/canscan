@@ -56,6 +56,7 @@ imgx:
     mov $1, %rax
     syscall
     inc %r8
+    inc %r8
 #handle loop stuff
     inc %r12
     cmp $512, %r12

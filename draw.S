@@ -4,19 +4,26 @@
 .global trim
 .global name
 .global parsefd
+.global zbuffer
 .data
     x: .quad 0
     half: .double .5
     name: .asciz "./image.ppm"
     parsefile: .asciz "./script"
 .bss
-    data: .zero 786432#512*512*3
+    data: .zero 1048576
+    zbuffer: .zero 2097152
     edgem: .quad 0
     drawm: .quad 0
     trim: .quad 0
     parsefd: .quad 0
 .text
 main:
+    lea zbuffer(%rip), %rdi
+    mov dblmin(%rip), %rax
+    mov $262144, %rcx
+    rep stosq
+
     mov $10, %rdi
     mov $4, %rsi
     call makematrix
@@ -45,7 +52,7 @@ main:
 
     lea data(%rip),%rdi
     xor %rsi, %rsi
-    mov $786432, %rdx
+    mov $1048576, %rdx
     call memset@plt
 
     mov $2, %rax
