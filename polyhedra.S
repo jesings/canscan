@@ -8,16 +8,16 @@
 .text
 .macro twosides a,b,c//draws two sides of a box
     vmovapd %ymm4, %ymm0
-    vaddpd %ymm\b, %ymm4, %ymm1
-    vaddpd %ymm\c, %ymm4, %ymm2
+    vaddpd %ymm\b, %ymm4, %ymm2
+    vaddpd %ymm\c, %ymm4, %ymm1
     vaddpd %ymm\b, %ymm4, %ymm3
     vaddpd %ymm\c, %ymm3, %ymm3
     call quadrilateralface
     vaddpd %ymm4, %ymm\a, %ymm0
-    vaddpd %ymm\b, %ymm4, %ymm2
-    vaddpd %ymm\a, %ymm2, %ymm2
-    vaddpd %ymm\c, %ymm4, %ymm1
+    vaddpd %ymm\b, %ymm4, %ymm1
     vaddpd %ymm\a, %ymm1, %ymm1
+    vaddpd %ymm\c, %ymm4, %ymm2
+    vaddpd %ymm\a, %ymm2, %ymm2
     vaddpd %ymm\b, %ymm4, %ymm3
     vaddpd %ymm\c, %ymm3, %ymm3
     vaddpd %ymm\a, %ymm3, %ymm3

@@ -191,12 +191,23 @@ bresenham2: //something like this: bresenham(int color,int x0,int x1, int y, dou
     cmp %rsi, %rdx
     jg noswap2
     xchg %rsi, %rdx
+    sub $8, %rsp
+    movsd %xmm0, (%rsp)
+    movsd %xmm1, %xmm0
+    movsd (%rsp), %xmm1
+    add $8, %rsp
     noswap2:
     mov %edi, %eax//put color into rax register for stosd
     lea data(%rip), %rdi//find proper destination
     imul $512,%rcx//get y coord offset
-    dec %rsi
     add %rsi, %rcx
+    mov %rdx, %r8
+    sub %rsi, %r8
+    inc %r8
+    cvtsi2sd %r8, %xmm2
+    vsubsd %xmm0, %xmm1, %xmm1
+    vdivsd %xmm2, %xmm1, %xmm1
+    lea zbuffer(%rip), %r9
     startb2:
     cmp %rsi, %rdx
     jl endb2
@@ -204,13 +215,14 @@ bresenham2: //something like this: bresenham(int color,int x0,int x1, int y, dou
     jg endb2
     cmp $0, %rsi
     jl oof
+    vcomisd (%r9,%rcx,8),%xmm0
+    jna oof
+    vmovsd %xmm0, (%r9,%rcx,8)
     mov %eax, (%rdi,%rcx,4)
-    inc %rcx
-    inc %rsi
-    jmp startb2
-    endb2:
-    ret
     oof:
     inc %rcx
     inc %rsi
+    vaddsd %xmm1, %xmm0, %xmm0
     jmp startb2
+    endb2:
+    ret

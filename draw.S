@@ -5,6 +5,7 @@
 .global name
 .global parsefd
 .global zbuffer
+.global half
 .data
     x: .quad 0
     half: .double .5
@@ -20,7 +21,7 @@
 .text
 main:
     lea zbuffer(%rip), %rdi
-    mov dblmin(%rip), %rax
+    mov minval(%rip), %rax
     mov $262144, %rcx
     rep stosq
 
@@ -49,11 +50,6 @@ main:
     mov %rdi, (%rax)
 
     call init_temps
-
-    lea data(%rip),%rdi
-    xor %rsi, %rsi
-    mov $1048576, %rdx
-    call memset@plt
 
     mov $2, %rax
     lea parsefile(%rip), %rdi

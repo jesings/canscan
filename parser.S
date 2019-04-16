@@ -91,7 +91,7 @@
     \labelname:
 .endm
 .global parse
-.global dblmin
+.global minval
 .data
     line: .asciz "line"
     scale: .asciz "scale"
@@ -109,7 +109,7 @@
     cspushm: .asciz "push"
     cspopm: .asciz "pop"
     clear: .asciz "clear"
-    dblmin: .long 4294967295
+    minval: .double -inf
 .bss
     buf: .zero 1024
     curchar: .byte 0
@@ -175,12 +175,12 @@ savel://saves the image into the proper filename, which is unfortunately capped 
     destroyfile 8,19,20
 clearl:
     lea zbuffer(%rip), %rdi
-    mov dblmin(%rip), %rax
+    mov minval(%rip), %rax
     mov $262144, %rcx
     rep stosq
     lea data(%rip), %rdi
     xor %rax, %rax
-    mov $262144, %rcx
+    mov $131072, %rcx
     rep stosq
     jmp afterl
 inpstream://file descriptor in parsefd(%rip), returns a string in %rax, or 0 if an EOF is encountered
