@@ -189,7 +189,7 @@ bresenham2: //something like this: bresenham(int color,int x0,int x1, int y, dou
     cmp $511, %rcx
     ja endb2
     cmp %rsi, %rdx
-    jg noswap2
+    jge noswap2
     xchg %rsi, %rdx
     sub $8, %rsp
     movsd %xmm0, (%rsp)
@@ -203,7 +203,7 @@ bresenham2: //something like this: bresenham(int color,int x0,int x1, int y, dou
     add %rsi, %rcx
     mov %rdx, %r8
     sub %rsi, %r8
-    inc %r8
+    //inc %r8
     cvtsi2sd %r8, %xmm2
     vsubsd %xmm0, %xmm1, %xmm1
     vdivsd %xmm2, %xmm1, %xmm1
