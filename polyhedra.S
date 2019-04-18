@@ -157,6 +157,13 @@ roundmatrix://0-19 phi in rdi, 0-19 theta in rsi, radius is in %xmm3
 .endm
     
 maketorus://matrix-ifies the tris for a torus
+    mov $4,%r8
+    cvtsi2sd %r8, %xmm5
+    mov $3,%r8
+    cvtsi2sd %r8, %xmm6
+    vdivsd %xmm5, %xmm6, %xmm5
+    vmulsd %xmm5, %xmm4, %xmm4
+    vmulsd %xmm5, %xmm3, %xmm3
     push %r15
     mov %rdi, %r15
     call gentorus
