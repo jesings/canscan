@@ -34,7 +34,7 @@ push
 move
 250 250 0
 torus
-0 0 0 50 150
+0 0 0 50 100
 display
 #clear everything, test torus again
 clear
@@ -45,7 +45,7 @@ y 30
 rotate
 x 45
 torus
-0 0 0 75 150
+0 0 0 60 100
 display
 clear
 pop
@@ -116,4 +116,3 @@ box
 display
 save
 robot.png
-
