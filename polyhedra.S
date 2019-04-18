@@ -3,7 +3,9 @@
 .global maketorus
 .data
     storage: .zero 64
-    pointo3: .double .1256637061
+    pointo3: .double 0.12566370614359172953850573533
+    step: .double 50
+    negone: .double -1
 .bss
 .text
 .macro twosides a,b,c//draws two sides of a box
@@ -157,13 +159,6 @@ roundmatrix://0-19 phi in rdi, 0-19 theta in rsi, radius is in %xmm3
 .endm
     
 maketorus://matrix-ifies the tris for a torus
-    mov $4,%r8
-    cvtsi2sd %r8, %xmm5
-    mov $3,%r8
-    cvtsi2sd %r8, %xmm6
-    vdivsd %xmm5, %xmm6, %xmm5
-    vmulsd %xmm5, %xmm4, %xmm4
-    vmulsd %xmm5, %xmm3, %xmm3
     push %r15
     mov %rdi, %r15
     call gentorus
@@ -310,12 +305,7 @@ gensphere://generates the points for a sphere
     ret
 
 gentorus://generates the points for a torus
-    sub $40, %rsp
-    movsd %xmm0, (%rsp)
-    movsd %xmm1, 8(%rsp)
-    movsd %xmm2, 16(%rsp)
-    movsd %xmm3, 24(%rsp)
-    movsd %xmm4, 32(%rsp)
+    movsd %xmm0, %xmm5
     mov $2550, %rdi
     mov $32, %rsi
     call calloc@PLT
@@ -323,44 +313,54 @@ gentorus://generates the points for a torus
     xor %rax, %rax
     startrotd:
     xor %rcx, %rcx
+    cvtsi2sd %rax, %xmm6
     startdonut:
-    movsd 24(%rsp), %xmm3
-    movsd 32(%rsp), %xmm4
-    callmatrix donutmatrix
+    cvtsi2sd %rcx, %xmm7
+
+    vmulsd pointo3(%rip), %xmm6 , %xmm0
+    call cos2
+    movsd %xmm0, %xmm8
+    vmulsd pointo3(%rip), %xmm7 , %xmm0
+    call cos2
+    vmulsd %xmm3, %xmm0, %xmm0
+    vaddsd %xmm4, %xmm0, %xmm0
+    vmulsd %xmm8, %xmm0, %xmm8
+    vaddsd %xmm5, %xmm8, %xmm8
+#x = cos(2*M_PI * rot) * (r1 * cos(2*M_PI * circ) + r2) + cx;
+    vmulsd pointo3(%rip), %xmm7 , %xmm0
+    call sin2
+    vmulsd %xmm0, %xmm3, %xmm0
+    vaddsd %xmm0, %xmm1, %xmm9
+#y = r1 * sin(2*M_PI * circ) + cy;
+    vmulsd pointo3(%rip), %xmm6, %xmm0
+    call sin2
+    vmulsd negone(%rip), %xmm0, %xmm0
+    movsd %xmm0, %xmm10
+    vmulsd pointo3(%rip), %xmm7 , %xmm0
+    call cos2
+    vmulsd %xmm3, %xmm0, %xmm0
+    vaddsd %xmm4, %xmm0, %xmm0
+    vmulsd %xmm10, %xmm0, %xmm10
+    vaddsd %xmm2, %xmm10, %xmm10
+#z = -1*sin(2*M_PI * rot) * (r1 * cos(2*M_PI * circ) + r2) + cz;
+    sub $32, %rsp
+    movsd %xmm8, (%rsp)
+    movsd %xmm9, 8(%rsp)
+    movsd %xmm10, 16(%rsp)
+    vmovupd (%rsp), %ymm8
+    add $32, %rsp
+    mov %rax, %r8
+    imul $50, %r8
+    add %rcx, %r8
+    shl $2, %r8
+    mov tempmatrixG(%rip), %rdi
+    vmovupd %ymm8, (%rdi, %r8,8)
+
+    inc %rcx
+    cmp $50, %rcx
     jne startdonut
     inc %rax
     cmp $50, %rax
     jle startrotd
-    add $40, %rsp
     mov tempmatrixG(%rip), %rax
     ret
-
-donutmatrix://0-19 phi in rdi, 0-19 theta in rsi, radius is in %xmm3, Radius is in %xmm4
-    sub $40, %rsp
-    movsd %xmm3, (%rsp)
-    movsd %xmm4, 32(%rsp)
-    cvtsi2sd %rdi, %xmm0
-    cvtsi2sd %rsi, %xmm1
-    handlematrixtrig 40, 0, 80,64,16
-    movsd %xmm0, 8(%rsp)
-    mov tempmatrixX(%rip), %rdi
-    mov (%rdi), %rdi
-    movsd 32(%rsp), %xmm1
-    vmulsd (%rsp), %xmm0, %xmm0
-    vaddsd %xmm1, %xmm0, %xmm0
-    movsd %xmm0, (%rdi)
-    movsd 24(%rsp), %xmm0
-    vmulsd (%rsp), %xmm0, %xmm0
-    movsd %xmm0, 8(%rdi)
-    //properly get new point for 3rd matrix slot
-    movsd 8(%rsp), %xmm0
-    vmulsd (%rsp), %xmm0, %xmm0
-    vaddsd %xmm1, %xmm0, %xmm0
-    movsd %xmm0, 16(%rdi)
-    movq $0, 24(%rdi)
-    mov tempmatrix4(%rip), %rdi
-    mov tempmatrixX(%rip), %rsi
-    call multiplymatrix
-    add $40, %rsp
-    ret
-

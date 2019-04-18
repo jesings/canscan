@@ -52,15 +52,15 @@ deg2rad://converts degrees to radians
     cvtsi2sd %rax, %xmm1
     divsd %xmm1, %xmm0
     ret
-.macro fputrig whichfunc
+.macro fputrig whichfunc, reg=0
     sub $4, %rsp
-    cvtsd2ss %xmm0, %xmm0
-    vmovss %xmm0, (%rsp)
+    cvtsd2ss %xmm\reg, %xmm\reg
+    vmovss %xmm\reg, (%rsp)
     fld (%rsp)
     f\whichfunc
     fstp (%rsp)
-    vmovss  (%rsp), %xmm0
-    cvtss2sd %xmm0, %xmm0
+    vmovss  (%rsp), %xmm\reg
+    cvtss2sd %xmm\reg, %xmm\reg
     add $4, %rsp
 .endm
 cos2:
